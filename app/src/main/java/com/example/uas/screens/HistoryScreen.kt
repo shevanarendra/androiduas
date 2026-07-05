@@ -37,12 +37,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.uas.data.AppData
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.uas.viewmodel.BookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen() {
-    val historyItems = AppData.getHistoryItems()
+fun HistoryScreen(bookingViewModel: BookingViewModel) {
+    val historyItems by bookingViewModel.historyItems.collectAsState()
     val primaryColor = Color(0xFF4F46E5)
 
     Column(

@@ -22,9 +22,15 @@ import com.example.uas.screens.HistoryScreen
 import com.example.uas.screens.LoginScreen
 import com.example.uas.screens.ProfileScreen
 import com.example.uas.screens.RegisterScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.uas.viewmodel.AuthViewModel
+import com.example.uas.viewmodel.BookingViewModel
 
 @Composable
-fun MainNavigation() {
+fun MainNavigation(
+    authViewModel: AuthViewModel = viewModel { AuthViewModel() },
+    bookingViewModel: BookingViewModel = viewModel { BookingViewModel() }
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -66,6 +72,7 @@ fun MainNavigation() {
         ) {
             composable(Screen.Login.route) {
                 LoginScreen(
+                    authViewModel = authViewModel,
                     onLoginSuccess = {
                         navController.navigate(Screen.Booking.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
@@ -79,6 +86,7 @@ fun MainNavigation() {
 
             composable(Screen.Register.route) {
                 RegisterScreen(
+                    authViewModel = authViewModel,
                     onRegisterSuccess = {
                         navController.popBackStack()
                     },
@@ -90,6 +98,8 @@ fun MainNavigation() {
 
             composable(Screen.Booking.route) {
                 BookingScreen(
+                    authViewModel = authViewModel,
+                    bookingViewModel = bookingViewModel,
                     onBookingSuccess = {
                         navController.navigate(Screen.History.route) {
                             popUpTo(Screen.Booking.route) { inclusive = false }
@@ -99,13 +109,14 @@ fun MainNavigation() {
             }
 
             composable(Screen.History.route) {
-                HistoryScreen()
+                HistoryScreen(bookingViewModel = bookingViewModel)
             }
 
             composable(Screen.Profile.route) {
                 ProfileScreen(
+                    authViewModel = authViewModel,
                     onLogout = {
-                        com.example.uas.data.AppData.logout()
+                        authViewModel.logout()
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }

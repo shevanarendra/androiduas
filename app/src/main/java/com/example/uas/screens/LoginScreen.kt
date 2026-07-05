@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,9 +53,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.uas.viewmodel.AuthViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
+    authViewModel: AuthViewModel,
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
@@ -68,7 +72,7 @@ fun LoginScreen(
     var hasAttemptedBiometric by remember { mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        if (com.example.uas.data.AppData.auth.currentUser != null && !hasAttemptedBiometric) {
+        if (authViewModel.hasActiveSession() && !hasAttemptedBiometric) {
             hasAttemptedBiometric = true
             val fragmentActivity = context as? androidx.fragment.app.FragmentActivity
             if (fragmentActivity != null) {
@@ -205,9 +209,9 @@ fun LoginScreen(
                         } else {
                             isLoading = true
                             scope.launch {
-                                val user = com.example.uas.data.AppData.login(email, password)
+                                val success = authViewModel.login(email, password)
                                 isLoading = false
-                                if (user != null) {
+                                if (success) {
                                     onLoginSuccess()
                                 } else {
                                     errorMessage = "Email atau password salah"

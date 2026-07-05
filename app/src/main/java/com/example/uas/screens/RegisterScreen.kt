@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,9 +53,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.uas.viewmodel.AuthViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
+    authViewModel: AuthViewModel,
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
@@ -243,20 +247,13 @@ fun RegisterScreen(
                             else -> {
                                 isLoading = true
                                 scope.launch {
-                                    val success = com.example.uas.data.AppData.register(name, email, phone, password)
-                                    isLoading = false
+                                    val success = authViewModel.register(name, email, phone, password)
                                     if (success) {
-                                        successMessage = "Registrasi berhasil! Silakan masuk."
-                                        errorMessage = ""
-                                        name = ""
-                                        email = ""
-                                        phone = ""
-                                        password = ""
-                                        confirmPassword = ""
                                         onRegisterSuccess()
                                     } else {
-                                        errorMessage = "Gagal mendaftar (email mungkin sudah terdaftar atau tidak valid)"
+                                        errorMessage = "Pendaftaran gagal"
                                     }
+                                    isLoading = false
                                 }
                             }
                         }

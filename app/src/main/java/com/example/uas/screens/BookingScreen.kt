@@ -46,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,8 +61,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.uas.data.AppData
+import com.example.uas.viewmodel.AuthViewModel
 import com.example.uas.data.BookingData
+import com.example.uas.data.User
+import com.example.uas.viewmodel.BookingViewModel
 import kotlinx.coroutines.launch
 
 private val PrimaryIndigo = Color(0xFF4F46E5)
@@ -70,7 +73,12 @@ private val BackgroundGray = Color(0xFFF8F9FA)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
+fun BookingScreen(
+    authViewModel: AuthViewModel,
+    bookingViewModel: BookingViewModel,
+    onBookingSuccess: () -> Unit
+) {
+    val currentUser by authViewModel.currentUser.collectAsState()
     var selectedTransport by remember { mutableStateOf("Pesawat") }
     var origin by remember { mutableStateOf("") }
     var destination by remember { mutableStateOf("") }
@@ -142,7 +150,7 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
                 .padding(20.dp)
         ) {
             Text(
-                text = "Halo, ${AppData.currentUser?.name?.split(" ")?.firstOrNull() ?: "Guest"}!",
+                text = "Halo, ${currentUser?.name?.split(" ")?.firstOrNull() ?: "Guest"}!",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF1E293B)
@@ -464,7 +472,7 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
                                     passengerName = passengerName,
                                     totalPrice = calculatePrice()
                                 )
-                                val success = AppData.addBooking(booking)
+                                val success = bookingViewModel.addBooking(booking)
                                 if (success) {
                                     showSuccessDialog = true
 

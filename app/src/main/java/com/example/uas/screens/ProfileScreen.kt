@@ -40,10 +40,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,8 +58,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import com.example.uas.data.AppData
+import com.example.uas.viewmodel.AuthViewModel
+import com.example.uas.data.User
 
 private val PrimaryIndigo = Color(0xFF4F46E5)
 private val BackgroundGray = Color(0xFFF8F9FA)
@@ -64,9 +67,12 @@ private val SurfaceWhite = Color(0xFFFFFFFF)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onLogout: () -> Unit = {}) {
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val user = AppData.currentUser
+fun ProfileScreen(
+    authViewModel: AuthViewModel,
+    onLogout: () -> Unit
+) {
+    val user by authViewModel.currentUser.collectAsState()
+    val scope = rememberCoroutineScope()
     var showEditDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(user?.name ?: "") }
     var editPhone by remember { mutableStateOf(user?.phone ?: "") }
@@ -123,7 +129,7 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
                 Button(
                     onClick = {
                         scope.launch {
-                            AppData.updateProfile(editName, editPhone)
+                            authViewModel.updateProfile(editName, editPhone)
                             showEditDialog = false
                         }
                     },
@@ -222,11 +228,10 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
                             passwordIsError = true
                         } else {
                             scope.launch {
-                                val success = AppData.changePassword(oldPassword, newPassword)
+                                val success = authViewModel.changePassword(oldPassword, newPassword)
                                 if (success) {
                                     passwordMessage = "Kata sandi berhasil diubah!"
                                     passwordIsError = false
-                                    // Auto dismiss after a bit or let user close
                                     oldPassword = ""
                                     newPassword = ""
                                     confirmNewPassword = ""
