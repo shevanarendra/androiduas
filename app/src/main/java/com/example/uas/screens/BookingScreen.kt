@@ -13,17 +13,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.DirectionsBoat
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,11 +38,13 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,6 +64,10 @@ import com.example.uas.data.AppData
 import com.example.uas.data.BookingData
 import kotlinx.coroutines.launch
 
+private val PrimaryIndigo = Color(0xFF4F46E5)
+private val PrimaryLight = Color(0xFFEEF2FF)
+private val BackgroundGray = Color(0xFFF8F9FA)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
@@ -78,9 +86,9 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
 
     val transportTypes = listOf(
-        TransportOption("Pesawat", "Transportasi Udara", Icons.Filled.Star),
-        TransportOption("Kapal Laut", "Transportasi Laut", Icons.Filled.Place),
-        TransportOption("Kereta", "Transportasi Darat", Icons.Filled.Home)
+        TransportOption("Pesawat", "Udara", Icons.Filled.Flight),
+        TransportOption("Kapal", "Laut", Icons.Filled.DirectionsBoat),
+        TransportOption("Kereta", "Darat", Icons.Filled.Train)
     )
 
     val classOptions = listOf("Ekonomi", "Eksekutif")
@@ -88,7 +96,7 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
     val calculatePrice = {
         val basePrice = when (selectedTransport) {
             "Pesawat" -> 800000
-            "Kapal Laut" -> 500000
+            "Kapal" -> 500000
             "Kereta" -> 400000
             else -> 500000
         }
@@ -102,269 +110,331 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
-            title = { Text("Berhasil!", fontWeight = FontWeight.Bold) },
-            text = { Text("Tiket berhasil dipesan! Silakan cek halaman Riwayat.") },
+            title = { Text("Pemesanan Berhasil!", fontWeight = FontWeight.Bold) },
+            text = { Text("Tiket perjalanan Anda berhasil dipesan. Anda dapat mengecek detail tiket di halaman Riwayat.") },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     showSuccessDialog = false
                     onBookingSuccess()
-                }) {
+                }, colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)) {
                     Text("Lihat Riwayat")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSuccessDialog = false }) {
-                    Text("Tutup")
+                    Text("Tutup", color = Color.Gray)
                 }
-            }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White
         )
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = BackgroundGray
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             Text(
-                text = "Selamat Datang, ${AppData.currentUser?.name ?: "Guest"}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0)
+                text = "Halo, ${AppData.currentUser?.name?.split(" ")?.firstOrNull() ?: "Guest"}!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1E293B)
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Silakan pesan tiket perjalanan Anda",
-                fontSize = 12.sp,
+                text = "Mau pergi ke mana hari ini?",
+                fontSize = 15.sp,
                 color = Color.Gray
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "Pemesanan Tiket",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = passengerName,
-                onValueChange = { passengerName = it },
-                label = { Text("Nama Penumpang") },
-                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Pilih Transportasi",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                transportTypes.forEach { transport ->
-                    TransportCard(
-                        modifier = Modifier.weight(1f),
-                        title = transport.name,
-                        subtitle = transport.subtitle,
-                        icon = transport.icon,
-                        isSelected = selectedTransport == transport.name,
-                        onClick = { selectedTransport = transport.name }
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Detail Perjalanan",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B)
                     )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = origin,
-                onValueChange = { origin = it },
-                label = { Text("Kota asal") },
-                leadingIcon = { Icon(Icons.Filled.Place, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                IconButton(onClick = {
-                    val temp = origin
-                    origin = destination
-                    destination = temp
-                }) {
-                    Icon(
-                        Icons.Filled.List,
-                        contentDescription = "Tukar Rute",
-                        tint = Color(0xFF1565C0)
+                    OutlinedTextField(
+                        value = passengerName,
+                        onValueChange = { passengerName = it },
+                        label = { Text("Nama Penumpang") },
+                        leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryIndigo,
+                            focusedLabelColor = PrimaryIndigo,
+                            focusedTextColor = PrimaryIndigo,
+                            unfocusedTextColor = Color(0xFF1E293B)
+                        )
                     )
-                }
-            }
 
-            OutlinedTextField(
-                value = destination,
-                onValueChange = { destination = it },
-                label = { Text("Kota tujuan") },
-                leadingIcon = { Icon(Icons.Filled.Place, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
+                    Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Transportasi",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF64748B)
+                    )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Dewasa (18+ Tahun)", fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(10.dp))
+
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(
-                            onClick = { if (adultCount > 1) adultCount-- },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFE3F2FD))
-                        ) {
-                            Icon(Icons.Filled.Remove, contentDescription = "Kurang", modifier = Modifier.size(16.dp))
-                        }
-                        Text("$adultCount", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        IconButton(
-                            onClick = { adultCount++ },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF1565C0))
-                        ) {
-                            Icon(Icons.Filled.Add, contentDescription = "Tambah", modifier = Modifier.size(16.dp), tint = Color.White)
+                        transportTypes.forEach { transport ->
+                            TransportCard(
+                                modifier = Modifier.weight(1f),
+                                title = transport.name,
+                                subtitle = transport.subtitle,
+                                icon = transport.icon,
+                                isSelected = selectedTransport == transport.name,
+                                onClick = { selectedTransport = transport.name }
+                            )
                         }
                     }
-                }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Anak-anak (0-17 Tahun)", fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    OutlinedTextField(
+                        value = origin,
+                        onValueChange = { origin = it },
+                        label = { Text("Kota Keberangkatan") },
+                        leadingIcon = { Icon(Icons.Filled.Place, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryIndigo,
+                            focusedLabelColor = PrimaryIndigo,
+                            focusedTextColor = PrimaryIndigo,
+                            unfocusedTextColor = Color(0xFF1E293B)
+                        )
+                    )
+
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         IconButton(
-                            onClick = { if (childCount > 0) childCount-- },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFE3F2FD))
-                        ) {
-                            Icon(Icons.Filled.Remove, contentDescription = "Kurang", modifier = Modifier.size(16.dp))
-                        }
-                        Text("$childCount", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        IconButton(
-                            onClick = { childCount++ },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF1565C0))
-                        ) {
-                            Icon(Icons.Filled.Add, contentDescription = "Tambah", modifier = Modifier.size(16.dp), tint = Color.White)
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Kelas", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = classExpanded,
-                onExpandedChange = { classExpanded = it }
-            ) {
-                OutlinedTextField(
-                    value = selectedClass,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = classExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                ExposedDropdownMenu(
-                    expanded = classExpanded,
-                    onDismissRequest = { classExpanded = false }
-                ) {
-                    classOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
                             onClick = {
-                                selectedClass = option
-                                classExpanded = false
+                                val temp = origin
+                                origin = destination
+                                destination = temp
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryLight)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.List,
+                                contentDescription = "Tukar Rute",
+                                tint = PrimaryIndigo,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = destination,
+                        onValueChange = { destination = it },
+                        label = { Text("Kota Tujuan") },
+                        leadingIcon = { Icon(Icons.Filled.Place, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryIndigo,
+                            focusedLabelColor = PrimaryIndigo,
+                            focusedTextColor = PrimaryIndigo,
+                            unfocusedTextColor = Color(0xFF1E293B)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    OutlinedTextField(
+                        value = travelDate,
+                        onValueChange = { travelDate = it },
+                        label = { Text("Tanggal Keberangkatan") },
+                        leadingIcon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        placeholder = { Text("DD/MM/YYYY") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryIndigo,
+                            focusedLabelColor = PrimaryIndigo,
+                            focusedTextColor = PrimaryIndigo,
+                            unfocusedTextColor = Color(0xFF1E293B)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
+                    Text(
+                        text = "Kelas Penumpang",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF64748B)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    ExposedDropdownMenuBox(
+                        expanded = classExpanded,
+                        onExpandedChange = { classExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedClass,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = classExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryIndigo,
+                                focusedLabelColor = PrimaryIndigo,
+                                focusedTextColor = Color(0xFF1E293B),
+                                unfocusedTextColor = Color(0xFF1E293B)
+                            )
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = classExpanded,
+                            onDismissRequest = { classExpanded = false }
+                        ) {
+                            classOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        selectedClass = option
+                                        classExpanded = false
+                                    }
+                                )
                             }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Dewasa (18+)", fontSize = 13.sp, color = Color(0xFF64748B))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFF8F9FA))
+                                    .padding(4.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { if (adultCount > 1) adultCount-- },
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.White)
+                                ) {
+                                    Icon(Icons.Filled.Remove, contentDescription = "Kurang", modifier = Modifier.size(16.dp), tint = PrimaryIndigo)
+                                }
+                                Text("$adultCount", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                IconButton(
+                                    onClick = { adultCount++ },
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(PrimaryIndigo)
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = "Tambah", modifier = Modifier.size(16.dp), tint = Color.White)
+                                }
+                            }
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Anak (0-17)", fontSize = 13.sp, color = Color(0xFF64748B))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFF8F9FA))
+                                    .padding(4.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { if (childCount > 0) childCount-- },
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.White)
+                                ) {
+                                    Icon(Icons.Filled.Remove, contentDescription = "Kurang", modifier = Modifier.size(16.dp), tint = PrimaryIndigo)
+                                }
+                                Text("$childCount", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                IconButton(
+                                    onClick = { childCount++ },
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(PrimaryIndigo)
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = "Tambah", modifier = Modifier.size(16.dp), tint = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = PrimaryIndigo)
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Total Estimasi Harga", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = calculatePrice(),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = travelDate,
-                onValueChange = { travelDate = it },
-                label = { Text("Tanggal Keberangkatan") },
-                leadingIcon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("DD/MM/YYYY") },
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Estimasi Harga", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = calculatePrice(),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1565C0)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
@@ -409,14 +479,15 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0))
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 Text("Pesan Sekarang", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(90.dp))
         }
     }
 }
@@ -434,11 +505,11 @@ fun TransportCard(
         modifier = modifier
             .height(100.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF1565C0) else Color(0xFFF5F5F5)
+            containerColor = if (isSelected) PrimaryIndigo else Color(0xFFF8F9FA)
         ),
-        border = if (isSelected) null else CardDefaults.outlinedCardBorder()
+        border = if (isSelected) null else CardDefaults.outlinedCardBorder(true)
     ) {
         Column(
             modifier = Modifier
@@ -450,19 +521,19 @@ fun TransportCard(
             Icon(
                 icon,
                 contentDescription = title,
-                tint = if (isSelected) Color.White else Color(0xFF1565C0),
+                tint = if (isSelected) Color.White else PrimaryIndigo,
                 modifier = Modifier.size(28.dp)
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 title,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color.White else Color.Black
+                color = if (isSelected) Color.White else Color(0xFF1E293B)
             )
             Text(
                 subtitle,
-                fontSize = 8.sp,
+                fontSize = 10.sp,
                 color = if (isSelected) Color.White.copy(alpha = 0.8f) else Color.Gray
             )
         }

@@ -2,7 +2,7 @@ package com.example.uas.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -22,6 +22,6 @@ data class BottomNavItem(
 
 val bottomNavItems = listOf(
     BottomNavItem(Screen.Booking, "Booking", Icons.Filled.DateRange),
-    BottomNavItem(Screen.History, "History", Icons.Filled.List),
+    BottomNavItem(Screen.History, "History", Icons.AutoMirrored.Filled.List),
     BottomNavItem(Screen.Profile, "Profile", Icons.Filled.Person)
 )

@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.automirrored.filled.AirplaneTicket
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,11 +43,12 @@ import com.example.uas.data.AppData
 @Composable
 fun HistoryScreen() {
     val historyItems = AppData.getHistoryItems()
+    val primaryColor = Color(0xFF4F46E5)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(Color(0xFFF8F9FA))
     ) {
         TopAppBar(
             title = {
@@ -56,7 +58,7 @@ fun HistoryScreen() {
                 )
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF1565C0),
+                containerColor = primaryColor,
                 titleContentColor = Color.White
             )
         )
@@ -69,22 +71,30 @@ fun HistoryScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    Icons.Filled.DateRange,
-                    contentDescription = null,
-                    tint = Color.Gray,
-                    modifier = Modifier.size(64.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(primaryColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.DateRange,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "Belum Ada Riwayat",
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray
+                    color = Color(0xFF1E293B)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Pesan tiket terlebih dahulu untuk melihat riwayat perjalanan Anda",
+                    text = "Pesan tiket perjalanan terlebih dahulu, riwayat pesanan Anda akan muncul di sini.",
                     fontSize = 14.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center
@@ -95,10 +105,14 @@ fun HistoryScreen() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(historyItems) { item ->
                     HistoryCard(item = item)
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
@@ -107,16 +121,17 @@ fun HistoryScreen() {
 
 @Composable
 fun HistoryCard(item: com.example.uas.data.HistoryItem) {
+    val primaryColor = Color(0xFF4F46E5)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -126,15 +141,15 @@ fun HistoryCard(item: com.example.uas.data.HistoryItem) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF1565C0)),
+                            .background(primaryColor.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Filled.Person,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = primaryColor,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -143,7 +158,8 @@ fun HistoryCard(item: com.example.uas.data.HistoryItem) {
                         Text(
                             text = item.passengerName,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
                         )
                         Text(
                             text = "Penumpang",
@@ -156,17 +172,20 @@ fun HistoryCard(item: com.example.uas.data.HistoryItem) {
                     Text(
                         text = item.totalPrice,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1565C0)
+                        fontWeight = FontWeight.ExtraBold,
+                        color = primaryColor
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            HorizontalDivider(color = Color(0xFFE0E0E0))
+            HorizontalDivider(
+                color = Color(0xFFF1F5F9), 
+                thickness = 2.dp
+            )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -174,23 +193,29 @@ fun HistoryCard(item: com.example.uas.data.HistoryItem) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.DateRange,
-                        contentDescription = null,
-                        tint = Color(0xFF1565C0),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFEEF2FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.AirplaneTicket,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = item.route,
-                        fontSize = 18.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1565C0)
+                        color = Color(0xFF1E293B)
                     )
                 }
                 Text(
                     text = item.departureDate,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
                     color = Color.Gray
                 )
             }

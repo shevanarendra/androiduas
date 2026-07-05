@@ -14,18 +14,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,7 +32,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -49,9 +50,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.uas.data.AppData
+
+private val PrimaryIndigo = Color(0xFF4F46E5)
+private val BackgroundGray = Color(0xFFF8F9FA)
+private val SurfaceWhite = Color(0xFFFFFFFF)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +68,14 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
     var showEditDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(user?.name ?: "") }
     var editPhone by remember { mutableStateOf(user?.phone ?: "") }
+
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmNewPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var passwordMessage by remember { mutableStateOf("") }
+    var passwordIsError by remember { mutableStateOf(false) }
 
     if (showEditDialog) {
         AlertDialog(
@@ -73,8 +89,14 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
                         label = { Text("Nama Lengkap") },
                         leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryIndigo,
+                            focusedLabelColor = PrimaryIndigo,
+                            focusedTextColor = PrimaryIndigo,
+                            unfocusedTextColor = Color(0xFF1E293B)
+                        )
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
@@ -83,31 +105,162 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
                         label = { Text("Nomor Telepon") },
                         leadingIcon = { Icon(Icons.Filled.Phone, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryIndigo,
+                            focusedLabelColor = PrimaryIndigo,
+                            focusedTextColor = PrimaryIndigo,
+                            unfocusedTextColor = Color(0xFF1E293B)
+                        )
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    AppData.currentUser = user?.copy(name = editName, phone = editPhone)
-                    showEditDialog = false
-                }) {
+                Button(
+                    onClick = {
+                        AppData.currentUser = user?.copy(name = editName, phone = editPhone)
+                        val index = AppData.users.indexOfFirst { it.email == user?.email }
+                        if (index != -1 && AppData.currentUser != null) {
+                            AppData.users[index] = AppData.currentUser!!
+                        }
+                        showEditDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Text("Simpan")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEditDialog = false }) {
-                    Text("Batal")
+                    Text("Batal", color = Color.Gray)
                 }
-            }
+            },
+            containerColor = SurfaceWhite,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showPasswordDialog = false
+                oldPassword = ""
+                newPassword = ""
+                confirmNewPassword = ""
+                passwordMessage = ""
+            },
+            title = { Text("Ubah Kata Sandi", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = oldPassword,
+                        onValueChange = { oldPassword = it; passwordMessage = "" },
+                        label = { Text("Kata Sandi Lama") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryIndigo, focusedLabelColor = PrimaryIndigo, focusedTextColor = PrimaryIndigo, unfocusedTextColor = Color(0xFF1E293B))
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it; passwordMessage = "" },
+                        label = { Text("Kata Sandi Baru") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryIndigo, focusedLabelColor = PrimaryIndigo, focusedTextColor = PrimaryIndigo, unfocusedTextColor = Color(0xFF1E293B))
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = confirmNewPassword,
+                        onValueChange = { confirmNewPassword = it; passwordMessage = "" },
+                        label = { Text("Konfirmasi Kata Sandi") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    contentDescription = "Toggle Password"
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryIndigo, focusedLabelColor = PrimaryIndigo, focusedTextColor = PrimaryIndigo, unfocusedTextColor = Color(0xFF1E293B))
+                    )
+                    if (passwordMessage.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = passwordMessage, 
+                            color = if (passwordIsError) Color.Red else Color(0xFF4CAF50), 
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (oldPassword.isEmpty() || newPassword.isEmpty() || confirmNewPassword.isEmpty()) {
+                            passwordMessage = "Semua field harus diisi"
+                            passwordIsError = true
+                        } else if (newPassword != confirmNewPassword) {
+                            passwordMessage = "Kata sandi baru tidak cocok"
+                            passwordIsError = true
+                        } else if (newPassword.length < 6) {
+                            passwordMessage = "Kata sandi minimal 6 karakter"
+                            passwordIsError = true
+                        } else {
+                            val success = AppData.changePassword(oldPassword, newPassword)
+                            if (success) {
+                                passwordMessage = "Kata sandi berhasil diubah!"
+                                passwordIsError = false
+                                // Auto dismiss after a bit or let user close
+                                oldPassword = ""
+                                newPassword = ""
+                                confirmNewPassword = ""
+                            } else {
+                                passwordMessage = "Kata sandi lama salah"
+                                passwordIsError = true
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Simpan")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showPasswordDialog = false
+                    oldPassword = ""
+                    newPassword = ""
+                    confirmNewPassword = ""
+                    passwordMessage = ""
+                }) {
+                    Text("Tutup", color = Color.Gray)
+                }
+            },
+            containerColor = SurfaceWhite,
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(BackgroundGray)
     ) {
         TopAppBar(
             title = {
@@ -117,7 +270,7 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
                 )
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF1565C0),
+                containerColor = PrimaryIndigo,
                 titleContentColor = Color.White
             )
         )
@@ -126,56 +279,65 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(110.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1565C0)),
+                    .background(PrimaryIndigo.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(60.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryIndigo),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = user?.name ?: "Guest",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E293B)
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = user?.email ?: "-",
+                fontSize = 15.sp,
+                color = Color.Gray
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = user?.email ?: "-",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
                 text = user?.phone ?: "-",
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 color = Color.Gray
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             ProfileMenuItem(
                 icon = Icons.Filled.Create,
                 title = "Edit Profil",
-                subtitle = "Ubah informasi profil Anda",
+                subtitle = "Ubah informasi pribadi Anda",
                 onClick = {
                     editName = user?.name ?: ""
                     editPhone = user?.phone ?: ""
@@ -184,49 +346,30 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
             )
 
             ProfileMenuItem(
-                icon = Icons.Filled.Star,
+                icon = Icons.Filled.Lock,
                 title = "Ubah Kata Sandi",
-                subtitle = "Perbarui kata sandi akun",
-                onClick = { }
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Filled.Favorite,
-                title = "Notifikasi",
-                subtitle = "Atur preferensi notifikasi",
-                onClick = { }
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Filled.Info,
-                title = "Bantuan",
-                subtitle = "Dapatkan bantuan dan dukungan",
-                onClick = { }
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Filled.List,
-                title = "Tentang Aplikasi",
-                subtitle = "Informasi versi aplikasi",
-                onClick = { }
+                subtitle = "Perbarui keamanan akun Anda",
+                onClick = { showPasswordDialog = true }
             )
 
             Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Button(
                 onClick = { onLogout() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
+                    .height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
                 Icon(Icons.Filled.Close, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Keluar", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Keluar dari Akun", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(90.dp))
         }
     }
 }
@@ -241,11 +384,11 @@ fun ProfileMenuItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            .padding(vertical = 6.dp)
+            .clip(RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
         onClick = onClick
     ) {
         Row(
@@ -256,15 +399,15 @@ fun ProfileMenuItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE3F2FD)),
+                    .background(PrimaryIndigo.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = Color(0xFF1565C0),
+                    tint = PrimaryIndigo,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -273,18 +416,20 @@ fun ProfileMenuItem(
                 Text(
                     text = title,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B)
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = Color.Gray
                 )
             }
             Icon(
-                Icons.Filled.ArrowForward,
+                Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = Color.Gray
+                tint = Color.LightGray
             )
         }
     }

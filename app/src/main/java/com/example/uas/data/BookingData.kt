@@ -55,6 +55,20 @@ object AppData {
         currentUser = null
     }
 
+    fun changePassword(oldPassword: String, newPassword: String): Boolean {
+        val user = currentUser ?: return false
+        if (user.password == oldPassword) {
+            val updatedUser = user.copy(password = newPassword)
+            val index = users.indexOfFirst { it.email == user.email }
+            if (index != -1) {
+                users[index] = updatedUser
+                currentUser = updatedUser
+                return true
+            }
+        }
+        return false
+    }
+
     fun addBooking(booking: BookingData) {
         bookings.add(booking)
     }
