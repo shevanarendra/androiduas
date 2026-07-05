@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.example.uas.data.AppData
 
 private val PrimaryIndigo = Color(0xFF4F46E5)
@@ -64,6 +65,7 @@ private val SurfaceWhite = Color(0xFFFFFFFF)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(onLogout: () -> Unit = {}) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val user = AppData.currentUser
     var showEditDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(user?.name ?: "") }
@@ -120,12 +122,10 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
             confirmButton = {
                 Button(
                     onClick = {
-                        AppData.currentUser = user?.copy(name = editName, phone = editPhone)
-                        val index = AppData.users.indexOfFirst { it.email == user?.email }
-                        if (index != -1 && AppData.currentUser != null) {
-                            AppData.users[index] = AppData.currentUser!!
+                        scope.launch {
+                            AppData.updateProfile(editName, editPhone)
+                            showEditDialog = false
                         }
-                        showEditDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
                     shape = RoundedCornerShape(12.dp)
@@ -221,17 +221,19 @@ fun ProfileScreen(onLogout: () -> Unit = {}) {
                             passwordMessage = "Kata sandi minimal 6 karakter"
                             passwordIsError = true
                         } else {
-                            val success = AppData.changePassword(oldPassword, newPassword)
-                            if (success) {
-                                passwordMessage = "Kata sandi berhasil diubah!"
-                                passwordIsError = false
-                                // Auto dismiss after a bit or let user close
-                                oldPassword = ""
-                                newPassword = ""
-                                confirmNewPassword = ""
-                            } else {
-                                passwordMessage = "Kata sandi lama salah"
-                                passwordIsError = true
+                            scope.launch {
+                                val success = AppData.changePassword(oldPassword, newPassword)
+                                if (success) {
+                                    passwordMessage = "Kata sandi berhasil diubah!"
+                                    passwordIsError = false
+                                    // Auto dismiss after a bit or let user close
+                                    oldPassword = ""
+                                    newPassword = ""
+                                    confirmNewPassword = ""
+                                } else {
+                                    passwordMessage = "Kata sandi lama salah"
+                                    passwordIsError = true
+                                }
                             }
                         }
                     },

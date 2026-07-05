@@ -452,28 +452,33 @@ fun BookingScreen(onBookingSuccess: () -> Unit = {}) {
                             scope.launch { snackbarHostState.showSnackbar("Tanggal keberangkatan harus diisi") }
                         }
                         else -> {
-                            val booking = BookingData(
-                                id = AppData.bookings.size + 1,
-                                transportType = selectedTransport,
-                                origin = origin,
-                                destination = destination,
-                                adultPassengers = adultCount,
-                                childPassengers = childCount,
-                                travelClass = selectedClass,
-                                travelDate = travelDate,
-                                passengerName = passengerName,
-                                totalPrice = calculatePrice()
-                            )
-                            AppData.addBooking(booking)
-                            showSuccessDialog = true
+                            scope.launch {
+                                val booking = BookingData(
+                                    transportType = selectedTransport,
+                                    origin = origin,
+                                    destination = destination,
+                                    adultPassengers = adultCount,
+                                    childPassengers = childCount,
+                                    travelClass = selectedClass,
+                                    travelDate = travelDate,
+                                    passengerName = passengerName,
+                                    totalPrice = calculatePrice()
+                                )
+                                val success = AppData.addBooking(booking)
+                                if (success) {
+                                    showSuccessDialog = true
 
-                            passengerName = ""
-                            origin = ""
-                            destination = ""
-                            adultCount = 1
-                            childCount = 0
-                            selectedClass = "Ekonomi"
-                            travelDate = ""
+                                    passengerName = ""
+                                    origin = ""
+                                    destination = ""
+                                    adultCount = 1
+                                    childCount = 0
+                                    selectedClass = "Ekonomi"
+                                    travelDate = ""
+                                } else {
+                                    snackbarHostState.showSnackbar("Gagal membuat pesanan")
+                                }
+                            }
                         }
                     }
                 },

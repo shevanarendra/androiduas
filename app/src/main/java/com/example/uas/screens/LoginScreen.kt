@@ -38,7 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +62,30 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var hasAttemptedBiometric by remember { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (com.example.uas.data.AppData.auth.currentUser != null && !hasAttemptedBiometric) {
+            hasAttemptedBiometric = true
+            val fragmentActivity = context as? androidx.fragment.app.FragmentActivity
+            if (fragmentActivity != null) {
+                com.example.uas.utils.BiometricHelper.showBiometricPrompt(
+                    activity = fragmentActivity,
+                    onSuccess = {
+                        onLoginSuccess()
+                    },
+                    onFailed = {
+                        // user can fallback to standard login
+                    }
+                )
+            } else {
+                onLoginSuccess() // Fallback if not FragmentActivity
+            }
+        }
+    }
 
     val primaryColor = Color(0xFF4F46E5)
 
@@ -174,12 +200,18 @@ fun LoginScreen(
                     onClick = {
                         if (email.isEmpty() || password.isEmpty()) {
                             errorMessage = "Email dan password harus diisi"
+                        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                            errorMessage = "Format email tidak valid"
                         } else {
-                            val user = com.example.uas.data.AppData.login(email, password)
-                            if (user != null) {
-                                onLoginSuccess()
-                            } else {
-                                errorMessage = "Email atau password salah"
+                            isLoading = true
+                            scope.launch {
+                                val user = com.example.uas.data.AppData.login(email, password)
+                                isLoading = false
+                                if (user != null) {
+                                    onLoginSuccess()
+                                } else {
+                                    errorMessage = "Email atau password salah"
+                                }
                             }
                         }
                     },
@@ -188,9 +220,10 @@ fun LoginScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                    enabled = !isLoading
                 ) {
-                    Text("Masuk", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(if (isLoading) "Memproses..." else "Masuk", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }

@@ -38,7 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +66,8 @@ fun RegisterScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var successMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val primaryColor = Color(0xFF4F46E5)
 
@@ -224,25 +228,35 @@ fun RegisterScreen(
                             name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() -> {
                                 errorMessage = "Semua field harus diisi"
                             }
+                            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                                errorMessage = "Format email tidak valid"
+                            }
+                            !phone.matches(Regex("^[0-9]{10,14}$")) -> {
+                                errorMessage = "Nomor telepon harus 10-14 digit angka"
+                            }
                             password != confirmPassword -> {
                                 errorMessage = "Password tidak cocok"
                             }
-                            password.length < 6 -> {
-                                errorMessage = "Password minimal 6 karakter"
+                            !password.matches(Regex("^(?=.*[A-Za-z])(?=.*\\\\d).{8,}$")) -> {
+                                errorMessage = "Password min. 8 karakter (gabungan huruf & angka)"
                             }
                             else -> {
-                                val success = com.example.uas.data.AppData.register(name, email, phone, password)
-                                if (success) {
-                                    successMessage = "Registrasi berhasil! Silakan masuk."
-                                    errorMessage = ""
-                                    name = ""
-                                    email = ""
-                                    phone = ""
-                                    password = ""
-                                    confirmPassword = ""
-                                    onRegisterSuccess()
-                                } else {
-                                    errorMessage = "Email sudah terdaftar"
+                                isLoading = true
+                                scope.launch {
+                                    val success = com.example.uas.data.AppData.register(name, email, phone, password)
+                                    isLoading = false
+                                    if (success) {
+                                        successMessage = "Registrasi berhasil! Silakan masuk."
+                                        errorMessage = ""
+                                        name = ""
+                                        email = ""
+                                        phone = ""
+                                        password = ""
+                                        confirmPassword = ""
+                                        onRegisterSuccess()
+                                    } else {
+                                        errorMessage = "Gagal mendaftar (email mungkin sudah terdaftar atau tidak valid)"
+                                    }
                                 }
                             }
                         }
@@ -252,9 +266,10 @@ fun RegisterScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                    enabled = !isLoading
                 ) {
-                    Text("Daftar Sekarang", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(if (isLoading) "Memproses..." else "Daftar Sekarang", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
